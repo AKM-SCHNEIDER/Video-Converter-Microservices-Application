@@ -6,6 +6,10 @@ This project is a Python-based microservices application deployed on AWS Elastic
 
 ## 🎬 Demo Video
 
+
+https://github.com/user-attachments/assets/7cb1adc2-380a-4060-b04b-9560a73d4e69
+
+
 [▶️ Watch demo video](Demo_Video.mp4)
 
 ## Architecture
