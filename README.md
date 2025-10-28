@@ -4,6 +4,10 @@
 
 This project is a Python-based microservices application deployed on AWS Elastic Kubernetes Service (EKS) that converts MP4 video files to MP3 audio files. The application follows a microservices architecture with five main services: Auth Service, Gateway Service, Converter Service, Notification Service, and Frontend Service. It utilizes PostgreSQL for authentication data, MongoDB for file storage, and RabbitMQ for message queuing. The frontend provides a user-friendly React interface for login, upload, status checking, and download operations.
 
+## 🎬 Demo Video
+
+[▶️ Watch demo video](Demo_Video.mp4)
+
 ## Architecture
 
 <p align="center">
@@ -82,14 +86,6 @@ The application consists of the following components:
 
 ## Deployment
 
-### Prerequisites
-
-- AWS Account with EKS cluster
-- Helm installed
-- kubectl configured
-- Python 3.x
-- AWS CLI
-
 ### Steps
 
 1. Deploy databases and RabbitMQ using Helm charts:
@@ -144,7 +140,7 @@ The application consists of the following components:
 
 Access the application at `http://nodeIP:30001` (replace nodeIP with your EKS node external IP, e.g., 44.200.235.233:30001).
 
-### User Workflow
+### Commands cheat sheet and quick user Workflow:
 1. **Login**: Enter email `rodrigorobert490@gmail.com` and password `123456`
 2. **Upload**: Select an MP4 video file and click upload
 3. **Status**: Monitor conversion progress (polls every 5 seconds)
@@ -194,8 +190,12 @@ curl -X GET -H 'Authorization: Bearer <JWT>' "http://nodeIP:30002/download?fid=<
 
 Each service is containerized with Docker. Source code is in `src/` directory with service-specific subdirectories. Requirements.txt files list Python dependencies.
 
-## Cleanup
 
-To destroy the infrastructure:
-1. Delete node groups
-2. Delete EKS cluster
+## Future Improvements
+
+- Implement Redis for caching
+- Add more comprehensive logging and monitoring with Prometheus/Grafana
+- Enhance security with TLS/SSL encryption
+- Implement CI/CD pipeline for automated deployments
+- Add user registration functionality
+- Improve frontend with real-time status updates using WebSockets
