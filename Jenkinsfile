@@ -19,8 +19,7 @@ pipeline {
         stage('Configure kubeconfig') {
             steps {
                 sh '''
-                  aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$AWS_DEFAULT_REGION" \
-                    --role-arn "arn:aws:iam::$AWS_ACCOUNT_ID:role/jenkins-eks-ecr-role"
+                  aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$AWS_DEFAULT_REGION"
                 '''
             }
         }
