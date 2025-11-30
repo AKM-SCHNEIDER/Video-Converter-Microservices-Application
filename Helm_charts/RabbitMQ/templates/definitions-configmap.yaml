@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-definitions
+data:
+  definitions.json: |
+    {
+      "vhosts": [
+        { "name": "/" }
+      ],
+      "queues": [
+        { "name": "video", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} }
+      ]
+    }

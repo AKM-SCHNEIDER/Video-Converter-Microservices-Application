@@ -1,0 +1,80 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    container_name: db
+    environment:
+      POSTGRES_USER: mohamed
+      POSTGRES_PASSWORD: cnd2023
+      POSTGRES_DB: authdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./Helm_charts/Postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  mongodb:
+    image: mongo:4.0.8
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI (guest/guest)
+
+  auth:
+    build:
+      context: ./src/auth-service
+    container_name: auth
+    environment:
+      DATABASE_HOST: db
+      DATABASE_NAME: authdb
+      DATABASE_USER: mohamed
+      DATABASE_PASSWORD: cnd2023
+      AUTH_TABLE: auth_user
+      JWT_SECRET: sarcasm
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+
+  gateway:
+    build:
+      context: ./src/gateway-service
+    container_name: gateway
+    environment:
+      AUTH_SVC_ADDRESS: auth:5000
+      MONGODB_VIDEOS_URI: mongodb://root:example@mongodb:27017/videos?authSource=admin
+      MONGODB_MP3S_URI:   mongodb://root:example@mongodb:27017/mp3s?authSource=admin
+    depends_on:
+      - mongodb
+      - rabbitmq
+      - auth
+    ports:
+      - "8080:8080"
+
+  converter:
+    build:
+      context: ./src/converter-service
+    container_name: converter
+    environment:
+      MONGODB_URI: mongodb://root:example@mongodb:27017/?authSource=admin
+      VIDEO_QUEUE: video
+    depends_on:
+      - mongodb
+      - rabbitmq
+
+  frontend:
+    build:
+      context: ./frontend-service
+    container_name: frontend
+    depends_on:
+      - gateway
+    ports:
+      - "30001:80"

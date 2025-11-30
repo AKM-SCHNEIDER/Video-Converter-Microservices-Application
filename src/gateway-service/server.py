@@ -31,6 +31,15 @@ def login():
     else:
         return err
 
+@server.route("/register", methods=["POST"])
+def register():
+    msg, err = access.register(request)
+
+    if not err:
+        return msg
+    else:
+        return err
+
 @server.route("/upload", methods=["POST"])
 def upload():
     access, err = validate.token(request)
@@ -46,12 +55,12 @@ def upload():
             return "exactly 1 file required", 400
 
         for _, f in request.files.items():
-            err = util.upload(f, fs_videos, channel, access)
+            video_fid, err = util.upload(f, fs_videos, channel, access)
 
             if err:
                 return err
 
-        return "success!", 200
+        return {"status": "success", "video_fid": video_fid}, 200
     else:
         return "not authorized", 401
 
@@ -97,10 +106,10 @@ def status():
             return "fid is required", 400
 
         try:
-            # Check if MP3 exists in GridFS
-            mp3_file = fs_mp3s.find_one({"_id": ObjectId(fid_string)})
+            # Treat fid as the original video_fid and look up by metadata
+            mp3_file = fs_mp3s.find_one({"metadata.video_fid": fid_string})
             if mp3_file:
-                return {"status": "completed"}, 200
+                return {"status": "completed", "mp3_fid": str(mp3_file._id)}, 200
             else:
                 return {"status": "processing"}, 200
         except Exception as err:

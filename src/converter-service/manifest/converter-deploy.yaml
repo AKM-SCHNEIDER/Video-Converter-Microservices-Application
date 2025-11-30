@@ -5,7 +5,7 @@ metadata:
   labels:
     app: converter
 spec:
-  replicas: 4
+  replicas: 2
   selector:
     matchLabels:
       app: converter
@@ -18,9 +18,11 @@ spec:
       labels:
         app: converter
     spec:
+      imagePullSecrets:
+        - name: ecr-secret
       containers:
         - name: converter
-          image: nasi101/converter
+          image: 814992167159.dkr.ecr.us-east-1.amazonaws.com/converter:v1
           envFrom:
             - configMapRef:
                 name: converter-configmap

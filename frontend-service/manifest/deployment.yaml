@@ -12,9 +12,11 @@ spec:
       labels:
         app: frontend
     spec:
+      imagePullSecrets:
+      - name: ecr-secret
       containers:
       - name: frontend
-        image: 814992167159.dkr.ecr.us-east-1.amazonaws.com/frontend:v3
+        image: 814992167159.dkr.ecr.us-east-1.amazonaws.com/frontend:v1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80

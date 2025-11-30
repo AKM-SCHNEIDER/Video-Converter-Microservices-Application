@@ -27,10 +27,19 @@ spec:
                 name: rabbitmq-configmap
             - secretRef:
                 name: rabbitmq-secret
+          env:
+            - name: RABBITMQ_LOAD_DEFINITIONS
+              value: "/etc/rabbitmq/definitions.json"
           volumeMounts:
             - mountPath: /var/lib/rabbitmq
               name: rabbitmq-volume
+            - mountPath: /etc/rabbitmq/definitions.json
+              name: rabbitmq-definitions
+              subPath: definitions.json
       volumes:
         - name: rabbitmq-volume
           persistentVolumeClaim:
             claimName: rabbitmq-pvc
+        - name: rabbitmq-definitions
+          configMap:
+            name: rabbitmq-definitions

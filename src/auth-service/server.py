@@ -35,6 +35,32 @@ def login():
     else:
         return 'Could not verify', 401, {'WWW-Authenticate': 'Basic realm="Login required!"'}
 
+@server.route('/register', methods=['POST'])
+def register():
+    auth_table_name = os.getenv('AUTH_TABLE')
+    auth = request.authorization
+    if not auth or not auth.username or not auth.password:
+        return 'Missing credentials', 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Check if user already exists
+        cur.execute(f"SELECT 1 FROM {auth_table_name} WHERE email = %s", (auth.username,))
+        if cur.fetchone():
+            return 'User already exists', 409
+
+        # Create new user
+        cur.execute(
+            f"INSERT INTO {auth_table_name} (email, password) VALUES (%s, %s)",
+            (auth.username, auth.password),
+        )
+        conn.commit()
+        return 'User created', 201
+    except Exception as err:
+        print(err)
+        return 'Internal server error', 500
+
 def CreateJWT(username, secret, authz):
     return jwt.encode(
         {

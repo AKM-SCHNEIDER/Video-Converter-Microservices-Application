@@ -18,7 +18,7 @@ def main():
     channel = connection.channel()
 
     def callback(ch, method, properties, body):
-        err = to_mp3.start(body, fs_videos, fs_mp3s, ch)
+        err = to_mp3.start(body, fs_videos, fs_mp3s)
         if err:
             ch.basic_nack(delivery_tag=method.delivery_tag)
         else:

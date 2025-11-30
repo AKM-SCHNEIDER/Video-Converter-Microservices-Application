@@ -18,9 +18,11 @@ spec:
       labels:
         app: auth
     spec:
+      imagePullSecrets:
+        - name: ecr-secret
       containers:
         - name: auth
-          image: nasi101/auth
+          image: 814992167159.dkr.ecr.us-east-1.amazonaws.com/auth:v1
           ports:
             - containerPort: 5000
           envFrom:

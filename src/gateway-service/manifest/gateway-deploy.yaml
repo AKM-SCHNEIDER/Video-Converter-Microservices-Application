@@ -17,9 +17,11 @@ spec:
       labels:
         app: gateway
     spec:
+      imagePullSecrets:
+        - name: ecr-secret
       containers:
         - name: gateway
-          image: nasi101/gateway
+          image: 814992167159.dkr.ecr.us-east-1.amazonaws.com/gateway:v1
           envFrom:
             - configMapRef:
                 name: gateway-configmap

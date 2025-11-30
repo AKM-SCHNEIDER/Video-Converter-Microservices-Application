@@ -6,7 +6,7 @@ def upload(f, fs, channel, access):
         fid = fs.put(f)
     except Exception as err:
         print(err)
-        return "internal server error, fs level", 500
+        return None, ("internal server error, fs level", 500)
 
     message = {
         "video_fid": str(fid),
@@ -26,4 +26,6 @@ def upload(f, fs, channel, access):
     except Exception as err:
         print(err)
         fs.delete(fid)
-        return f"internal server error rabbitmq issue, {err}", 500
+        return None, (f"internal server error rabbitmq issue, {err}", 500)
+
+    return str(fid), None
