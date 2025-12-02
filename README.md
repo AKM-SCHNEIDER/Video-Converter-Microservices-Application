@@ -11,6 +11,8 @@ https://github.com/user-attachments/assets/7cb1adc2-380a-4060-b04b-9560a73d4e69
 
 **This is the last version (the new one)**
 
+https://github.com/user-attachments/assets/9526f61a-b604-4997-a3fb-88479a92acb4
+
 
 ## Old Architecture:
 
