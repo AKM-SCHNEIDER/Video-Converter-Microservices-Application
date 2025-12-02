@@ -16,6 +16,8 @@ def main():
         pika.ConnectionParameters(host='rabbitmq',heartbeat=0)
     )
     channel = connection.channel()
+    # ensure queue exists (idempotent) so startup doesn't fail if it was missing
+    channel.queue_declare(queue=os.environ.get("VIDEO_QUEUE"), durable=True)
 
     def callback(ch, method, properties, body):
         err = to_mp3.start(body, fs_videos, fs_mp3s)

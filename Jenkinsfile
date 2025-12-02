@@ -92,6 +92,21 @@ pipeline {
             }
         }
 
+        stage('Cleanup old ReplicaSets') {
+            steps {
+                sh '''
+                  OLD_RS=$(kubectl get rs --no-headers | awk '$2==0 && $3==0 && $4==0 {print $1}')
+                  if [ -n "$OLD_RS" ]; then
+                    echo "Deleting old ReplicaSets with 0 desired/current/ready:"
+                    echo "$OLD_RS"
+                    kubectl delete rs $OLD_RS
+                  else
+                    echo "No old ReplicaSets to clean up."
+                  fi
+                '''
+            }
+        }
+
         stage('Deploy to EKS') {
             steps {
                 sh '''
