@@ -5,15 +5,23 @@
 Video-to-MP3 microservices app on AWS EKS. Jenkins CI/CD builds images, pushes to ECR, installs infra with Helm, applies manifests, and sets deployments to the new images. Services: Auth (Flask/Postgres), Gateway (Flask/Mongo/RabbitMQ), Converter (MoviePy/RabbitMQ), Frontend (React/Nginx). Data: PostgreSQL for users, MongoDB GridFS for files, RabbitMQ queue for conversion jobs. Frontend lets users register, log in, upload MP4, poll status, and download MP3.
 
 ## 🎬 Demo Video
+**This is the first version (the old one)**
 
 https://github.com/user-attachments/assets/7cb1adc2-380a-4060-b04b-9560a73d4e69
 
-[▶️ Watch demo video](Demo_Video.mp4)
+**This is the last version (the new one)**
 
-## Architecture
+
+## Old Architecture:
 
 <p align="center">
-  <img src="Project Architecture.png" width="1083" title="Architecture" alt="Architecture">
+  <img src="assets/Old Project Architecture.png" width="1083" title="Architecture" alt="Architecture">
+  </p>
+
+## New Architecture:
+
+<p align="center">
+  <img src="assets/New Project Architecture.png" width="1083" title="Architecture" alt="Architecture">
   </p>
 
 The application consists of the following components:
@@ -73,6 +81,14 @@ The application consists of the following components:
 - **AWS EKS**: Kubernetes cluster on AWS
 - **Storage**: Persistent Volumes for databases
 
+<p align="center">
+  <img src="assets/EKS_cluster.png" width="900" title="EKS cluster" alt="EKS cluster">
+</p>
+
+<p align="center">
+  <img src="assets/EKS_cluster 2.png" width="900" title="EKS nodes" alt="EKS nodes">
+</p>
+
 ## Application Flow
 
 1. User authenticates via `POST /login` with email/password
@@ -90,6 +106,18 @@ The application consists of the following components:
 - Env in `Jenkinsfile`: `AWS_DEFAULT_REGION`, `AWS_ACCOUNT_ID`, `CLUSTER_NAME`, `ECR_REGISTRY`, `IMAGE_TAG` (commit hash).
 - Jenkins host needs Docker (socket mounted), Helm, kubectl, AWS CLI, IAM role with ECR push + EKS access, GitHub webhook or SCM polling.
 - Deployments use `RollingUpdate` with `maxSurge: 0` / `maxUnavailable: 1` to avoid a temporary second pod on small nodes.
+
+<p align="center">
+  <img src="assets/Jenkins_pipeline_overview.png" width="900" title="Jenkins pipeline" alt="Jenkins pipeline">
+</p>
+
+<p align="center">
+  <img src="assets/ECR_repos.png" width="900" title="ECR repositories" alt="ECR repositories">
+</p>
+
+<p align="center">
+  <img src="assets/IAM_jenkins-eks-ecr-role.png" width="900" title="Jenkins IAM role" alt="Jenkins IAM role">
+</p>
 
 ### Manual steps (if not using Jenkins)
 1) Helm install infra:
@@ -120,6 +148,14 @@ kubectl patch deployment frontend --type='json' -p='[{"op": "add", "path": "/spe
 - Expose only frontend (NodePort 30001) and gateway (NodePort 30002) to your IP. Everything else stays internal (Postgres 5432, Mongo 27017, RabbitMQ 5672/15672).
 - Node SG inbound: allow TCP 30001/30002 from your IP. Leave DB/queue internal.
 - Jenkins UI: TCP 8080 from your IP only. SSH: TCP 22 from your IP.
+
+<p align="center">
+  <img src="assets/IAM_EKSNodeRole .png" width="900" title="Node IAM role" alt="Node IAM role">
+</p>
+
+<p align="center">
+  <img src="assets/Instances.png" width="900" title="EC2 instances" alt="EC2 instances">
+</p>
 
 ### Database bootstrap
 - Postgres init.sql runs on first start (mounted to `/docker-entrypoint-initdb.d/`); creates `auth_user` and seeds a user. If needed manually:
