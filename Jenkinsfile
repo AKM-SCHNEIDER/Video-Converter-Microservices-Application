@@ -72,6 +72,26 @@ pipeline {
             }
         }
 
+        stage('Update deployment images') {
+            steps {
+                sh '''
+                  kubectl set image deployment/auth \
+                    auth="$ECR_REGISTRY/auth:$IMAGE_TAG"
+                  kubectl set image deployment/gateway \
+                    gateway="$ECR_REGISTRY/gateway:$IMAGE_TAG"
+                  kubectl set image deployment/converter \
+                    converter="$ECR_REGISTRY/converter:$IMAGE_TAG"
+                  kubectl set image deployment/frontend \
+                    frontend="$ECR_REGISTRY/frontend:$IMAGE_TAG"
+
+                  kubectl rollout status deployment/auth
+                  kubectl rollout status deployment/gateway
+                  kubectl rollout status deployment/converter
+                  kubectl rollout status deployment/frontend
+                '''
+            }
+        }
+
         stage('Deploy to EKS') {
             steps {
                 sh '''
