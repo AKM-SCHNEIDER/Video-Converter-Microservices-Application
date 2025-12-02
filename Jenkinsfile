@@ -41,6 +41,18 @@ pipeline {
             }
         }
 
+        // Apply manifests early to ensure resources exist; images will be updated later
+        stage('Deploy manifests') {
+            steps {
+                sh '''
+                  kubectl apply -f src/auth-service/manifest
+                  kubectl apply -f src/gateway-service/manifest
+                  kubectl apply -f src/converter-service/manifest
+                  kubectl apply -f frontend-service/manifest || true
+                '''
+            }
+        }
+
         stage('Login to ECR') {
             steps {
                 sh '''
@@ -107,19 +119,6 @@ pipeline {
             }
         }
 
-        stage('Deploy to EKS') {
-            steps {
-                sh '''
-                  # Make sure kubeconfig is set; uncomment if you want Jenkins to set it:
-                  # aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$AWS_DEFAULT_REGION"
-
-                  kubectl apply -f src/auth-service/manifest
-                  kubectl apply -f src/gateway-service/manifest
-                  kubectl apply -f src/converter-service/manifest
-                  kubectl apply -f frontend-service/manifest || true  # if you add manifests here later
-                '''
-            }
-        }
     }
 
     post {
