@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a Python-based microservices application deployed on AWS Elastic Kubernetes Service (EKS) that converts MP4 video files to MP3 audio files. It uses a Jenkins CI/CD pipeline to build images, push to ECR, install/update dependencies via Helm, and apply Kubernetes manifests automatically. Services: Auth, Gateway, Converter, Frontend. Data layer: PostgreSQL (users), MongoDB (files), RabbitMQ (jobs). The React frontend lets users register, log in, upload, check status, and download.
+Video-to-MP3 microservices app on AWS EKS. Jenkins CI/CD builds images, pushes to ECR, installs infra with Helm, applies manifests, and sets deployments to the new images. Services: Auth (Flask/Postgres), Gateway (Flask/Mongo/RabbitMQ), Converter (MoviePy/RabbitMQ), Frontend (React/Nginx). Data: PostgreSQL for users, MongoDB GridFS for files, RabbitMQ queue for conversion jobs. Frontend lets users register, log in, upload MP4, poll status, and download MP3.
 
 ## 🎬 Demo Video
 
@@ -86,39 +86,46 @@ The application consists of the following components:
 ## Deployment
 
 ### CI/CD (Jenkins) — current flow
-- Pipeline stages: configure kubeconfig for EKS, Helm install/upgrade MongoDB, PostgreSQL (runs init.sql to create `auth_user`), and RabbitMQ (auto-loads `definitions.json` to create the durable `video` queue), ensure `ecr-secret` exists, login to ECR, build/push images (auth/gateway/converter/frontend), then `kubectl apply` manifests.
-- Configure env in `Jenkinsfile`: `AWS_DEFAULT_REGION`, `AWS_ACCOUNT_ID`, `CLUSTER_NAME`.
-- Jenkins host needs Docker, Helm, kubectl, AWS CLI, and an IAM role with ECR push and EKS access.
-- GitHub webhook or SCM polling triggers builds on push.
+- Stages: kubeconfig, Helm install/upgrade MongoDB, PostgreSQL (runs init.sql to create `auth_user`), RabbitMQ (loads `definitions.json` to create durable `video` queue), ensure `ecr-secret`, ECR login, build/push images (auth/gateway/converter/frontend), set deployments to new images, rollout status, cleanup old ReplicaSets (0 desired/current/ready), kubectl apply manifests.
+- Env in `Jenkinsfile`: `AWS_DEFAULT_REGION`, `AWS_ACCOUNT_ID`, `CLUSTER_NAME`, `ECR_REGISTRY`, `IMAGE_TAG` (commit hash).
+- Jenkins host needs Docker (socket mounted), Helm, kubectl, AWS CLI, IAM role with ECR push + EKS access, GitHub webhook or SCM polling.
+- Deployments use `RollingUpdate` with `maxSurge: 0` / `maxUnavailable: 1` to avoid a temporary second pod on small nodes.
 
 ### Manual steps (if not using Jenkins)
-1. Deploy databases and RabbitMQ via Helm:
-   ```
-   helm upgrade --install mongodb  ./Helm_charts/MongoDB
-   helm upgrade --install postgres ./Helm_charts/Postgres
-   helm upgrade --install rabbitmq ./Helm_charts/RabbitMQ
-   ```
-2. Queue creation: automatic. RabbitMQ StatefulSet loads `definitions.json` and creates the `video` queue at startup (no UI step needed).
-3. Deploy microservices:
-   ```
-   kubectl apply -f src/auth-service/manifest/
-   kubectl apply -f src/gateway-service/manifest/
-   kubectl apply -f src/converter-service/manifest/
-   kubectl apply -f frontend-service/manifest/   # if provided
-   ```
-4. Create image pull secret (for private ECR):
-   ```
-   kubectl create secret docker-registry ecr-secret \
-     --docker-server=<account>.dkr.ecr.<region>.amazonaws.com \
-     --docker-username=AWS \
-     --docker-password=$(aws ecr get-login-password --region <region>) \
-     --docker-email=none
-   kubectl patch deployment frontend --type='json' -p='[{"op": "add", "path": "/spec/template/spec/imagePullSecrets", "value": [{"name": "ecr-secret"}]}]'
-   ```
+1) Helm install infra:
+```
+helm upgrade --install mongodb  ./Helm_charts/MongoDB
+helm upgrade --install postgres ./Helm_charts/Postgres
+helm upgrade --install rabbitmq ./Helm_charts/RabbitMQ
+```
+2) Queue creation: automatic via RabbitMQ definitions and converter’s `queue_declare`.
+3) Deploy services:
+```
+kubectl apply -f src/auth-service/manifest/
+kubectl apply -f src/gateway-service/manifest/
+kubectl apply -f src/converter-service/manifest/
+kubectl apply -f frontend-service/manifest/   # if present
+```
+4) Image pull secret (private ECR):
+```
+kubectl create secret docker-registry ecr-secret \
+  --docker-server=<account>.dkr.ecr.<region>.amazonaws.com \
+  --docker-username=AWS \
+  --docker-password=$(aws ecr get-login-password --region <region>) \
+  --docker-email=none
+kubectl patch deployment frontend --type='json' -p='[{"op": "add", "path": "/spec/template/spec/imagePullSecrets", "value": [{"name": "ecr-secret"}]}]'
+```
 
-### Important
-PostgreSQL table creation is automated on first start (init.sql mounted into `/docker-entrypoint-initdb.d/`). If needed manually:
+### Networking / Security Groups
+- Expose only frontend (NodePort 30001) and gateway (NodePort 30002) to your IP. Everything else stays internal (Postgres 5432, Mongo 27017, RabbitMQ 5672/15672).
+- Node SG inbound: allow TCP 30001/30002 from your IP. Leave DB/queue internal.
+- Jenkins UI: TCP 8080 from your IP only. SSH: TCP 22 from your IP.
+
+### Database bootstrap
+- Postgres init.sql runs on first start (mounted to `/docker-entrypoint-initdb.d/`); creates `auth_user` and seeds a user. If needed manually:
+```
 kubectl exec -it deployment/postgres-deploy -- psql -U mohamed -d authdb -c "CREATE TABLE IF NOT EXISTS auth_user (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, email VARCHAR(255) NOT NULL, password VARCHAR(255) NOT NULL);"
+```
 
 
 ### Environment Variables
